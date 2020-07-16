@@ -1,0 +1,352 @@
+<html>
+
+    <script
+    src="https://code.jquery.com/jquery-3.5.0.min.js"
+    integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
+    crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/js/all.min.js" integrity="sha256-HkXXtFRaflZ7gjmpjGQBENGnq8NIno4SDNq/3DbkMgo=" crossorigin="anonymous"></script>
+
+   <body>
+
+      <div class="container">
+
+         <div class="row">
+            <div class="col-sm mt-3">
+               <canvas id="cvs" width="640" height="480"></canvas>
+               <div class="form-group bg-info p-2 text-white" style="width: 640px">
+                  <input type="checkbox" onchange="javascript:RGB332=!RGB332;refresh()" id="VGA">
+                  <label for="VGA">RGB332</label>
+               </div>
+               <div id="svg" style="display: none"></div>
+            </div>
+         </div>
+
+
+         <div>
+            <div class="badge badge-pill badge-warning">
+               <i class="fas fa-layer-group"></i>
+               <select onchange="javascript:sel=this.value">
+                  <option value="0">BG1</option>
+                  <option value="1">BG2</option>
+                  <option value="2">BG3</option>
+                  <option value="3">SVG1</option>
+                  <option value="4">SVG2</option>
+               </select>
+            </div>
+            <div class="badge badge-pill badge-warning">
+               <i class="fas fa-arrows-alt"></i>
+               <button onmousedown="startTransform(sel, 0, -1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-left"></i></button>
+               <button onmousedown="startTransform(sel, 0,  1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-right"></i></button>
+               <button onmousedown="startTransform(sel, 1, -1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-up"></i></button>
+               <button onmousedown="startTransform(sel, 1,  1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-down"></i></button>
+            </div>
+            <div class="badge badge-pill badge-warning">
+               <i class="fas fa-arrows-alt-h"></i>
+               <button onmousedown="startTransform(sel, 2,  1)" onmouseup="stopTransform()"><i class="fas fa-plus"></i></button>
+               <button onmousedown="startTransform(sel, 2, -1)" onmouseup="stopTransform()"><i class="fas fa-minus"></i></button>
+            </div>
+            <div class="badge badge-pill badge-warning">
+               <i class="fas fa-arrows-alt-v"></i>
+               <button onmousedown="startTransform(sel, 3,  1)" onmouseup="stopTransform()"><i class="fas fa-plus"></i></button>
+               <button onmousedown="startTransform(sel, 3, -1)" onmouseup="stopTransform()"><i class="fas fa-minus"></i></button>
+            </div>
+         </div>
+
+
+         <div class="row align-items-center">
+            <div class="col-sm mt-3">
+               <div>
+                  <label id="LBG" class="btn btn-secondary" for="BG"><i class="fas fa-image"></i></label>
+                  <label id="LSVG" class="btn btn-secondary" for="SVG"><i class="far fa-futbol"></i></label>
+                  <label id="LROM" class="btn btn-secondary" for="ROM"><i class="fas fa-database"></i></label>
+                  <label class="btn btn-secondary" onclick="exportBIN()"><i class="fas fa-save"></i></label>
+                  <input id="BG" type="file" onchange="importBG()" class="invisible">
+                  <input id="SVG" type="file" onchange="importSVG()" class="invisible">
+                  <input id="ROM" type="file" onchange="importROM()" class="invisible">
+               </div>
+            </div>
+         </div>
+
+         <div class="row">
+            <div class="col-sm">
+               <label>MCU</label>
+               <select id="mcuid">
+                  <option value="0" disabled>SM-5A</option>
+                  <option value="1" selected>SM-510</option>
+                  <option value="2" disabled>SM-511</option>
+                  <option value="3" disabled>SM-530</option>
+                  <option value="4" disabled>SM-590</option>
+               </select>
+            </div>
+         </div>
+
+         <div class="container w-50 float-left" id="keys">
+            <div class="row">
+               <div class="col-sm"></div>
+               <div class="col-sm">K1</div>
+               <div class="col-sm">K2</div>
+               <div class="col-sm">K3</div>
+               <div class="col-sm">K4</div>
+            </div>
+            <div class="row bg-light">
+               <div class="col-sm">S1</div>
+               <div class="col-sm"><select id="k0"></select></div>
+               <div class="col-sm"><select id="k1"></select></div>
+               <div class="col-sm"><select id="k2"></select></div>
+               <div class="col-sm"><select id="k3"></select></div>
+            </div>
+            <div class="row">
+               <div class="col-sm">S2</div>
+               <div class="col-sm"><select id="k4"></select></div>
+               <div class="col-sm"><select id="k5"></select></div>
+               <div class="col-sm"><select id="k6"></select></div>
+               <div class="col-sm"><select id="k7"></select></div>
+            </div>
+            <div class="row bg-light">
+               <div class="col-sm">S3</div>
+               <div class="col-sm"><select id="k8"></select></div>
+               <div class="col-sm"><select id="k9"></select></div>
+               <div class="col-sm"><select id="k10"></select></div>
+               <div class="col-sm"><select id="k11"></select></div>
+            </div>
+            <div class="row">
+               <div class="col-sm">S4</div>
+               <div class="col-sm"><select id="k12"></select></div>
+               <div class="col-sm"><select id="k13"></select></div>
+               <div class="col-sm"><select id="k14"></select></div>
+               <div class="col-sm"><select id="k15"></select></div>
+            </div>
+            <div class="row bg-light">
+               <div class="col-sm">S5</div>
+               <div class="col-sm"><select id="k16"></select></div>
+               <div class="col-sm"><select id="k17"></select></div>
+               <div class="col-sm"><select id="k18"></select></div>
+               <div class="col-sm"><select id="k19"></select></div>
+            </div>
+            <div class="row">
+               <div class="col-sm">S6</div>
+               <div class="col-sm"><select id="k20"></select></div>
+               <div class="col-sm"><select id="k21"></select></div>
+               <div class="col-sm"><select id="k22"></select></div>
+               <div class="col-sm"><select id="k23"></select></div>
+            </div>
+         </div>
+
+         <div class="clearfix"></div>
+      </div>
+
+      <br>
+   </body>
+
+
+    <script>
+
+      let DOMURL = window.URL || window.webkitURL || window
+      let canvas = document.getElementById('cvs');
+      let ctx = canvas.getContext('2d')
+      let ROM
+      let BGImg = []
+      let SVGImg = []
+      let tfs = [
+         [0, 0, 640, 480], [0, 0, 640, 480],
+         [0, 0, 640, 480], [0, 0, 640, 480],
+         [0, 0, 640, 480]
+      ]
+      let sel = 0
+      let RGB332 = false
+
+
+      let options = [
+         'right', 'left', 'down', 'up',
+         'jump', 'time', 'game A', 'game B',
+         'alarm', 'action 1', 'action 2', 'action 3'
+      ]
+      $('#keys select').each((i, e) => {
+         for(k in options) {
+            var opt = $('<option>')
+            $(e).append(opt.val(k).text(options[k]))
+         }
+         $(e).append(opt.val(15).text('none'))
+         $(e).val(15) // none
+      })
+
+      refresh()
+
+      function importBG() {
+         let BG = document.getElementById('BG').files[0]
+         if (BG) loadBGFile(BG)
+      }
+
+      function importSVG() {
+         let SVG = document.getElementById('SVG').files[0]
+         if (SVG) loadSVGFile(SVG)
+      }
+
+      function importROM() {
+         let RF = document.getElementById('ROM').files[0]
+         if (RF) loadROMFile(RF)
+      }
+
+      function loadBGFile(BG) {
+         let reader = new FileReader()
+         reader.readAsDataURL(BG)
+         reader.onload = BGLoaded
+      }
+
+      function loadSVGFile(SVG) {
+         let reader = new FileReader()
+         reader.readAsText(SVG, "UTF-8")
+         reader.onload = SVGLoaded
+      }
+
+      function loadROMFile(RF) {
+         let reader = new FileReader()
+         reader.readAsArrayBuffer(RF)
+         reader.onload = evt => {
+            ROM = evt.target.result
+            $('#LROM').removeClass('btn-secondary').addClass('btn-success')
+         }
+      }
+
+      function BGLoaded(evt) {
+         if (!BGImg[sel]) BGImg[sel] = new Image()
+         BGImg[sel].src = evt.target.result
+         BGImg[sel].onload = function() {
+            refresh()
+            //$('#LBG').removeClass('btn-secondary').addClass('btn-success')
+         }
+      }
+
+      function drawBG() {
+         BGImg.forEach((img, i) => {
+            ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
+         })
+         if (RGB332) doRGB332()
+      }
+
+      function drawSVG() {
+         SVGImg.forEach((img, i) => {
+            ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
+         })
+      }
+
+      function refresh() {
+         ctx.fillStyle = "#000"
+         ctx.fillRect(0, 0, 640, 480)
+         drawBG()
+         drawSVG()
+      }
+
+      function doRGB332() {
+         let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
+         let data = imageData.data
+         for (var i = 0; i < data.length; i += 4) {
+            data[i  ] = data[i  ] & 0b11100000
+            data[i+1] = data[i+1] & 0b11100000
+            data[i+2] = data[i+2] & 0b11000000
+         }
+         ctx.putImageData(imageData, 0, 0);
+      }
+
+      let transform
+      function startTransform(i, j, n) {
+         transform = setInterval(function() {
+            tfs[i][j] += n
+            refresh()
+         }, 50)
+      }
+
+      function stopTransform() {
+         clearInterval(transform)
+      }
+
+      function SVGLoaded(evt) {
+         $('#svg').html(evt.target.result)
+         $('svg').attr('width', '640').removeAttr('height')
+
+         $('svg #layer2').hide() // should be the big white rectangle, pls check
+
+         let elements = $('#layer1 path,#layer1 g')
+         elements.each((k, e) => {
+            let title = $(e).find('title')
+            if (title.length) {
+                  let id = title.text().split('.')
+                  let col = id[0] << 6 | id[1] << 2 | id[2]
+                  let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00`
+                  if ($(e).prop('tagName') == 'g') {
+                     $(e).find('path').each((i, e) => $(e).attr('style', style))
+                  }
+                  else {
+                     $(e).attr('style', style)
+                  }
+            }
+         })
+
+         $('svg path').each((k, e) => {
+            $(e).attr('shape-rendering', 'crispEdges')
+         })
+
+         let data = $('#svg').html()
+         let svg = new Blob([data], {type: 'image/svg+xml'})
+         let url = DOMURL.createObjectURL(svg)
+         if (!SVGImg[sel]) SVGImg[sel] = new Image()
+         SVGImg[sel].src = url
+         SVGImg[sel].onload = function() {
+            refresh()
+           // $('#LSVG').removeClass('btn-secondary').addClass('btn-success')
+         }
+      }
+
+      function exportBIN() {
+         if (!ROM) return
+
+         let buffer = new Uint8Array(13+640*480+640*480+ROM.byteLength)
+
+         let ptr = 0
+         buffer[ptr++] = $('#mcuid').val()
+
+         for (var i = 0; i < 23; i+=2) {
+            var id1 = '#k' + i
+            var id2 = '#k' + (i+1)
+            buffer[ptr++] = $(id1).val() << 4 | $(id2).val()
+         }
+
+         RGB332 = true
+         $('#VGA').prop('checked', RGB332)
+         ctx.fillStyle = "#000"
+         ctx.fillRect(0, 0, 640, 480)
+         drawBG()
+         let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
+         let data = imageData.data
+         for (var i = 0; i < data.length; i += 4) {
+            buffer[ptr++] = (data[i] & 0b11100000) | ((data[i+1] & 0b11100000) >> 3) | (data[i+2] >> 6)
+         }
+
+         ctx.fillStyle = "#ffffff"
+         ctx.fillRect(0, 0, 640, 480)
+         drawSVG()
+         imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
+         data = imageData.data
+         for (var i = 0; i < data.length; i += 4) {
+            buffer[ptr++] = data[i+1]
+         }
+
+         buffer.set(new Uint8Array(ROM), ptr)
+
+         let binary = new Blob([buffer], {type: 'application/octet-binary'})
+         let url = DOMURL.createObjectURL(binary)
+         var a = document.createElement('a')
+         document.body.appendChild(a)
+         a.style = 'display: none'
+         a.href = url
+         a.download = 'download.bin'
+         a.click()
+         window.URL.revokeObjectURL(url)
+
+         refresh()
+      }
+
+    </script>
+
+</html>
