@@ -36,8 +36,8 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] VIDEO_ARX,
-	output  [7:0] VIDEO_ARY,
+	output [11:0] VIDEO_ARX,
+	output [11:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -47,16 +47,19 @@ module emu
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
+	output        VGA_SCALER, // Force VGA scaler
 
-	/*
-	// Use framebuffer from DDRAM (USE_FB=1 in qsf)
+	input  [11:0] HDMI_WIDTH,
+	input  [11:0] HDMI_HEIGHT,
+
+`ifdef USE_FB
+	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
 	// FB_FORMAT:
 	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
 	//    [3]   : 0=16bits 565 1=16bits 1555
 	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
 	//
-	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of 16 bytes.
-
+	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of pixel size (in bytes)
 	output        FB_EN,
 	output  [4:0] FB_FORMAT,
 	output [11:0] FB_WIDTH,
@@ -65,7 +68,16 @@ module emu
 	output [13:0] FB_STRIDE,
 	input         FB_VBL,
 	input         FB_LL,
-	*/
+	output        FB_FORCE_BLANK,
+
+	// Palette control for 8bit modes.
+	// Ignored for other video modes.
+	output        FB_PAL_CLK,
+	output  [7:0] FB_PAL_ADDR,
+	output [23:0] FB_PAL_DOUT,
+	input  [23:0] FB_PAL_DIN,
+	output        FB_PAL_WR,
+`endif
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -96,6 +108,7 @@ module emu
 	output        SD_CS,
 	input         SD_CD,
 
+`ifdef USE_DDRAM
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
 	output        DDRAM_CLK,
@@ -108,6 +121,7 @@ module emu
 	output [63:0] DDRAM_DIN,
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
+`endif
 
 	//SDRAM interface with lower latency
 	output        SDRAM_CLK,
@@ -146,10 +160,12 @@ assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+//assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;
 
 assign VGA_SL = 0;
 assign VGA_F1 = 0;
+assign VGA_SCALER = 0;
 
 assign AUDIO_S = 0;
 assign AUDIO_L = { melody[0], 15'd0 };
@@ -162,13 +178,19 @@ assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
 
+wire [1:0] ar = status[9:8];
+
+assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
+
+
 `include "build_id.v"
 localparam CONF_STR = {
 	"Game & Watch;;",
 	"-;",
-	"F,BIN,Load File;",
+	"O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"-;",
-	"O1,Aspect Ratio,Original,4/3;",
+	"F,BIN,Load File;",
 	"-;",
 	"R0,Reset;",
 	"-;",
@@ -222,10 +244,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 ///////////////////////   CLOCKS   ///////////////////////////////
 
 wire locked;
-wire clk_sys;
-wire clk_vid;
-wire clk_lcd;
-reg [2:0] clk_div;
+wire clk_sys, clk_vid;
 
 pll pll
 (
@@ -236,163 +255,57 @@ pll pll
 	.locked(locked)
 );
 
-always @(posedge clk_sys)
-  clk_div <= clk_div + 3'd1;
-
-assign clk_lcd = clk_div[2];
-
-wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 
 //////////////////////////////////////////////////////////////////
 
-wire [15:0] segA;
-wire [15:0] segB;
-wire Bs;
+wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 
 wire [1:0] melody;
-wire [3:0] H;
-wire [7:0] S;
-
-reg mcuid;
-reg [7:0] joy_config[11:0];
-always @(posedge clk_sys)
-    if (ioctl_download) begin
-        if (ioctl_addr == 0) mcuid <= ioctl_dout;
-        if (ioctl_addr >= 1 && ioctl_addr <= 12) joy_config[ioctl_addr-1] <= ioctl_dout;
-	end
-
-wire [31:0] joy = joystick_0;
-
-wire [3:0] K;
-always @*
-  case (S[2:0])
-    3'b001: K = { joy[joy_config[ 1][3:0]], joy[joy_config[ 1][7:4]], joy[joy_config[ 0][3:0]], joy[joy_config[ 0][7:4]]};
-    3'b010: K = { joy[joy_config[ 3][3:0]], joy[joy_config[ 3][7:4]], joy[joy_config[ 2][3:0]], joy[joy_config[ 2][7:4]]};
-    3'b100: K = { joy[joy_config[ 5][3:0]], joy[joy_config[ 5][7:4]], joy[joy_config[ 4][3:0]], joy[joy_config[ 4][7:4]]};
-//    6'b001000: K = { joy[joy_config[ 7][3:0]], joy[joy_config[ 7][7:4]], joy[joy_config[ 6][3:0]], joy[joy_config[ 6][7:4]]};
-//    6'b010000: K = { joy[joy_config[ 9][3:0]], joy[joy_config[ 9][7:4]], joy[joy_config[ 8][3:0]], joy[joy_config[ 8][7:4]]};
-//    6'b100000: K = { joy[joy_config[11][3:0]], joy[joy_config[11][7:4]], joy[joy_config[10][3:0]], joy[joy_config[10][7:4]]};
-  endcase
-
-localparam SCREENSIZE = 640*480;
-
-wire rom_init = ioctl_download && ioctl_addr >= 2*SCREENSIZE+13;
-wire [11:0] rom_init_addr = ioctl_addr - 2*SCREENSIZE-13;
-
-SM510 mcu(
-  .rst(reset),
-  .clk(clk_sys),
-
-  .rom_init(rom_init),
-  .rom_init_data(ioctl_dout),
-  .rom_init_addr(rom_init_addr),
-
-  .K(K),
-  .Beta(1),
-  .BA(1),
-  .segA(segA),
-  .segB(segB),
-  .Bs(Bs),
-
-  .R(melody),
-  .H(H),
-  .S(S),
-
-  .dbg(LED_USER)
-);
-
-
 wire [24:0] sdram_addr;
-wire [7:0] sdram_data;
+wire [15:0] sdram_data;
 wire sdram_rd;
-
-wire [7:0] lcd_dout;
-wire [7:0] video_data;
-wire [18:0] video_addr;
-wire [18:0] lcd_addr;
-wire vram_we;
-
-wire hsync;
-wire vsync;
 wire hblank;
 wire vblank;
+assign VGA_DE = ~(hblank|vblank);
 assign CLK_VIDEO = clk_vid;
-assign VIDEO_ARX = status[1] ? 8'd4 : 8'd16;
-assign VIDEO_ARY = status[1] ? 8'd3: 8'd9;
-wire [7:0] red, green, blue;
 
+assign CE_PIXEL = ce_pix;
+reg ce_pix;
+always @(posedge clk_vid)
+  ce_pix <= ~ce_pix;
 
-vram vram(
-  .clk(clk_sys),
-  .addr_wr(lcd_addr),
-  .din(lcd_dout),
-  .we(vram_we),
-
-  .addr_rd(video_addr),
-  .dout(video_data)
-);
-
-
-lcd lcd(
-  .clk(clk_lcd),
-  .lcd_addr(lcd_addr),
-  .lcd_dout(lcd_dout),
-  .lcd_vram_we(vram_we),
-
-  .sdram_addr(sdram_addr),
-  .sdram_data(sdram_data),
-  .sdram_rd(sdram_rd),
-
-  .segA(segA),
-  .segB(segB),
-  .Bs(Bs),
-  .H(H),
-
-  .rdy(~ioctl_download)
-);
-
-
-video video(
-  .clk_vid(clk_vid),
-  .ce_pxl(CE_PIXEL),
-  .hsync(hsync),
-  .vsync(vsync),
-  .hblank(hblank),
-  .vblank(vblank),
-  .red(red),
-  .green(green),
-  .blue(blue),
-  .addr(video_addr),
-  .din(video_data)
-);
-
-
-video_cleaner video_cleaner(
+gnw_core gnw_core(
+	.reset(reset),
+	.clk_sys(clk_sys),
 	.clk_vid(clk_vid),
-	.ce_pix(CE_PIXEL),
-	.R(red),
-	.G(green),
-	.B(blue),
-	.HSync(~hsync),
-	.VSync(~vsync),
-	.HBlank(hblank),
-	.VBlank(vblank),
-	.VGA_R(VGA_R),
-	.VGA_G(VGA_G),
-	.VGA_B(VGA_B),
-	.VGA_VS(VGA_VS),
-	.VGA_HS(VGA_HS),
-	.VGA_DE(VGA_DE)
+
+	.ioctl_download(ioctl_download),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
+
+	.melody(melody),
+	.joy(joystick_0),
+
+	.red(VGA_R),
+	.green(VGA_G),
+	.blue(VGA_B),
+	.hsync(VGA_HS),
+	.vsync(VGA_VS),
+	.hblank(hblank),
+	.vblank(vblank),
+
+	.sdram_addr(sdram_addr),
+	.sdram_data(sdram_data),
+	.sdram_rd(sdram_rd)
 );
 
-// offset by 13 when reading because of config bytes
-wire [24:0] shift_sdram_addr = sdram_addr + 25'd13;
+
 sdram sdram
 (
-	.*, // <= it's bad practice, todo: fix
+	.*,
 	.init(~locked),
 	.clk(clk_sys),
-	.addr(ioctl_download ? ioctl_addr : shift_sdram_addr),
+	.addr(ioctl_download ? ioctl_addr : sdram_addr),
 	.wtbt(0),
 	.dout(sdram_data),
 	.din(ioctl_dout),
@@ -400,6 +313,5 @@ sdram sdram
 	.we(ioctl_wr),
 	.ready()
 );
-
 
 endmodule

@@ -66,14 +66,23 @@ wire [11:0] PC = { Pu, Pm, Pl };
 assign S = W;
 
 reg clk_32k;
-reg clk_v;
+// reg clk_v;
 
 // 100M/0.032768=3051, 2^24/3051=5498
-always @(posedge clk)
-	{ clk_v, clk_cnt } <= clk_cnt + 24'd5498;
+// 48/0.032768=1464, 2^24/1464=11459
+// always @(posedge clk)
+// 	{ clk_v, clk_cnt } <= clk_cnt + 24'd11459;
+always @(posedge clk) begin
+	clk_cnt <= clk_cnt + 24'd1;
+	clk_32k <= 1'b0;
+	if (clk_cnt == 24'd3714) begin
+	  clk_32k <= 1'b1;
+	  clk_cnt <= 0;
+	end
+end
 
-always @(posedge clk)
-  if (clk_v) clk_32k = ~clk_32k;
+// always @(posedge clk)
+//   if (clk_v) clk_32k = ~clk_32k;
 
 wire clk_64 = div[6]; // TODO: try to increase segment speed (div[4]?)
 wire clk_io = div[1];
@@ -166,6 +175,7 @@ always @(posedge clk_64)
     Bs <= 1'((L & ~Y) >> H_clk);
 
 // rom
+// todo: clock rom_addr <= PC
 always @(posedge clk)
   rom_dout <= rom[PC];
 

@@ -1,29 +1,35 @@
 <html>
 
-    <script
-    src="https://code.jquery.com/jquery-3.5.0.min.js"
-    integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
-    crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/js/all.min.js" integrity="sha256-HkXXtFRaflZ7gjmpjGQBENGnq8NIno4SDNq/3DbkMgo=" crossorigin="anonymous"></script>
-
+   <script
+   src="https://code.jquery.com/jquery-3.5.0.min.js"
+   integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
+   crossorigin="anonymous"></script>
+   <!--
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/1.5.4/eruda.min.js"></script>
+   <script>eruda.init()</script>
+   -->
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/js/all.min.js" integrity="sha256-HkXXtFRaflZ7gjmpjGQBENGnq8NIno4SDNq/3DbkMgo=" crossorigin="anonymous"></script>
+   <script src="https://cdn.jsdelivr.net/npm/rgbquant@1.1.2/src/rgbquant.min.js"></script>
    <body>
 
       <div class="container">
 
          <div class="row">
             <div class="col-sm mt-3">
-               <canvas id="cvs" width="640" height="480"></canvas>
-               <div class="form-group bg-info p-2 text-white" style="width: 640px">
-                  <input type="checkbox" onchange="javascript:RGB332=!RGB332;refresh()" id="VGA">
-                  <label for="VGA">RGB332</label>
-               </div>
+               <canvas id="cvs" width="800" height="600"></canvas>
                <div id="svg" style="display: none"></div>
             </div>
          </div>
 
+         <div class="row">
+            <div class="col-sm mt-3">
+               <input type="checkbox" onchange="javascript:dither=!dither;refresh()" id="VGA">
+               <label for="dither">Dither</label>
+            </div>
+         </div>
 
-         <div>
+         <div class="mb-3">
             <div class="badge badge-pill badge-warning">
                <i class="fas fa-layer-group"></i>
                <select onchange="javascript:sel=this.value">
@@ -33,6 +39,8 @@
                   <option value="3">SVG1</option>
                   <option value="4">SVG2</option>
                </select>
+               <label id="upbtn" role="button" class="m-0" for="upload"><i class="fas fa-upload"></i></label>
+               <input id="upload" type="file" onchange="upload()" style="display:none">
             </div>
             <div class="badge badge-pill badge-warning">
                <i class="fas fa-arrows-alt"></i>
@@ -51,20 +59,15 @@
                <button onmousedown="startTransform(sel, 3,  1)" onmouseup="stopTransform()"><i class="fas fa-plus"></i></button>
                <button onmousedown="startTransform(sel, 3, -1)" onmouseup="stopTransform()"><i class="fas fa-minus"></i></button>
             </div>
-         </div>
-
-
-         <div class="row align-items-center">
-            <div class="col-sm mt-3">
-               <div>
-                  <label id="LBG" class="btn btn-secondary" for="BG"><i class="fas fa-image"></i></label>
-                  <label id="LSVG" class="btn btn-secondary" for="SVG"><i class="far fa-futbol"></i></label>
-                  <label id="LROM" class="btn btn-secondary" for="ROM"><i class="fas fa-database"></i></label>
-                  <label class="btn btn-secondary" onclick="exportBIN()"><i class="fas fa-save"></i></label>
-                  <input id="BG" type="file" onchange="importBG()" class="invisible">
-                  <input id="SVG" type="file" onchange="importSVG()" class="invisible">
-                  <input id="ROM" type="file" onchange="importROM()" class="invisible">
-               </div>
+            <div class="badge badge-pill badge-warning" style="padding: 6px">
+               <label id="LROM" role="button" class="m-0" for="ROM">
+                  <i class="fas fa-upload"></i>
+                  <span class="pl-1">no rom binary</span>
+               </label>
+               <input id="ROM" type="file" onchange="importROM()" style="display:none">
+            </div>
+            <div class="badge badge-pill badge-warning" style="padding: 6px" role="button" onclick="exportBIN()">
+               <i class="fas fa-save"></i> export
             </div>
          </div>
 
@@ -141,27 +144,29 @@
 
 
     <script>
+      const width = 800
+      const height = 600
 
       let DOMURL = window.URL || window.webkitURL || window
-      let canvas = document.getElementById('cvs');
+      let canvas = document.getElementById('cvs')
       let ctx = canvas.getContext('2d')
       let ROM
       let BGImg = []
       let SVGImg = []
       let tfs = [
-         [0, 0, 640, 480], [0, 0, 640, 480],
-         [0, 0, 640, 480], [0, 0, 640, 480],
-         [0, 0, 640, 480]
+         [0, 0, width, height], [0, 0, width, height],
+         [0, 0, width, height], [0, 0, width, height],
+         [0, 0, width, height]
       ]
       let sel = 0
-      let RGB332 = false
-
+      let dither = false
 
       let options = [
          'right', 'left', 'down', 'up',
          'jump', 'time', 'game A', 'game B',
          'alarm', 'action 1', 'action 2', 'action 3'
       ]
+
       $('#keys select').each((i, e) => {
          for(k in options) {
             var opt = $('<option>')
@@ -173,13 +178,30 @@
 
       refresh()
 
+      function upload() {
+         switch (true) {
+            case sel < 3: importBG(); break;
+            case sel >= 3: importSVG(); break;
+         }
+      }
+
       function importBG() {
-         let BG = document.getElementById('BG').files[0]
+         let BG = document.getElementById('upload').files[0]
+         if (BG.type.match(/.+\/svg/)) {
+            alert('Please use a SVG channel')
+            document.getElementById('upload').value = ''
+            return;
+         }
          if (BG) loadBGFile(BG)
       }
 
       function importSVG() {
-         let SVG = document.getElementById('SVG').files[0]
+         let SVG = document.getElementById('upload').files[0]
+         if (!SVG.type.match(/.+\/svg/)) {
+            alert('Please use a BG channel')
+            document.getElementById('upload').value = ''
+            return;
+         }
          if (SVG) loadSVGFile(SVG)
       }
 
@@ -205,7 +227,7 @@
          reader.readAsArrayBuffer(RF)
          reader.onload = evt => {
             ROM = evt.target.result
-            $('#LROM').removeClass('btn-secondary').addClass('btn-success')
+            document.querySelector('#LROM span').innerHTML = 'rom: ' + RF.name
          }
       }
 
@@ -214,7 +236,6 @@
          BGImg[sel].src = evt.target.result
          BGImg[sel].onload = function() {
             refresh()
-            //$('#LBG').removeClass('btn-secondary').addClass('btn-success')
          }
       }
 
@@ -222,7 +243,7 @@
          BGImg.forEach((img, i) => {
             ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
          })
-         if (RGB332) doRGB332()
+         return dither ? doRGBQuant() : false;
       }
 
       function drawSVG() {
@@ -233,9 +254,29 @@
 
       function refresh() {
          ctx.fillStyle = "#000"
-         ctx.fillRect(0, 0, 640, 480)
+         ctx.fillRect(0, 0, width, height)
          drawBG()
          drawSVG()
+      }
+
+      function doRGBQuant() {
+        //var opts = { colors: 64 }
+        //var q = new RgbQuant(opts)
+        var q = new RgbQuant()
+        q.sample(canvas)
+        var pal = q.palette(true, true)
+        var out = q.reduce(canvas, 2)
+        let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        let data = imageData.data
+        let j = 0
+        for (var i = 0; i < data.length; i += 4) {
+          data[i  ] = pal[out[j]][0]
+          data[i+1] = pal[out[j]][1]
+          data[i+2] = pal[out[j]][2]
+          j++
+        }
+        ctx.putImageData(imageData, 0, 0);
+        return { pal: pal, img: out }
       }
 
       function doRGB332() {
@@ -263,7 +304,7 @@
 
       function SVGLoaded(evt) {
          $('#svg').html(evt.target.result)
-         $('svg').attr('width', '640').removeAttr('height')
+         $('svg').attr('width', width).removeAttr('height')
 
          $('svg #layer2').hide() // should be the big white rectangle, pls check
 
@@ -294,42 +335,71 @@
          SVGImg[sel].src = url
          SVGImg[sel].onload = function() {
             refresh()
-           // $('#LSVG').removeClass('btn-secondary').addClass('btn-success')
          }
       }
 
       function exportBIN() {
          if (!ROM) return
 
-         let buffer = new Uint8Array(13+640*480+640*480+ROM.byteLength)
+         // mcu id (1)
+         // config size (1)
+         // joystick config (12)
+         // image size (32)
+         // mask+img data (XxYx2)
+         // palette (256x3)
+         // rom binary
+
+         let config_size = 12
+         let img_size = width*height*2-1
+         let buffer_size = 1 + 1 + config_size + 32 + img_size + 256*3-1 + ROM.byteLength;
+         let buffer = new Uint8Array(buffer_size)
 
          let ptr = 0
+
+         // 1 byte for mcu
          buffer[ptr++] = $('#mcuid').val()
 
+         // config size
+         buffer[ptr++] = config_size
+
+         // 12 bytes for joystick config
          for (var i = 0; i < 23; i+=2) {
             var id1 = '#k' + i
             var id2 = '#k' + (i+1)
-            buffer[ptr++] = $(id1).val() << 4 | $(id2).val()
+            buffer[ptr++] = parseInt($(id1).val()) << 4 | parseInt($(id2).val())
          }
 
-         RGB332 = true
-         $('#VGA').prop('checked', RGB332)
-         ctx.fillStyle = "#000"
-         ctx.fillRect(0, 0, 640, 480)
-         drawBG()
-         let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
-         let data = imageData.data
-         for (var i = 0; i < data.length; i += 4) {
-            buffer[ptr++] = (data[i] & 0b11100000) | ((data[i+1] & 0b11100000) >> 3) | (data[i+2] >> 6)
+         // img size
+         for (var i = 24; i >= 0; i -= 8) {
+           buffer[ptr++] = (img_size >> i) & 0xff
          }
 
+         // mask
          ctx.fillStyle = "#ffffff"
-         ctx.fillRect(0, 0, 640, 480)
+         ctx.fillRect(0, 0, width, height)
          drawSVG()
-         imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
-         data = imageData.data
-         for (var i = 0; i < data.length; i += 4) {
-            buffer[ptr++] = data[i+1]
+         let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
+         let maskData = imageData.data
+         let mask = []
+         for (var i = 0; i < maskData.length; i += 4) {
+            mask.push(maskData[i+1]) // green channel
+         }
+
+         dither = true
+         $('#VGA').prop('checked', dither)
+         ctx.fillStyle = "#000"
+         ctx.fillRect(0, 0, width, height)
+         let qdat = drawBG()
+
+         for (var i = 0; i < qdat.img.length; i++) {
+            buffer[ptr++] = mask[i]
+            buffer[ptr++] = qdat.img[i]
+         }
+
+         for (var i = 0; i < qdat.pal.length; i++) {
+            buffer[ptr++] = qdat.pal[i][0]
+            buffer[ptr++] = qdat.pal[i][1]
+            buffer[ptr++] = qdat.pal[i][2]
          }
 
          buffer.set(new Uint8Array(ROM), ptr)
@@ -347,6 +417,6 @@
          refresh()
       }
 
-    </script>
+   </script>
 
 </html>
