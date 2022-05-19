@@ -1,2 +1,0 @@
-# Binary Generator for MiSTer
-

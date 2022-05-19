@@ -17,7 +17,7 @@
 
          <div class="row">
             <div class="col-sm mt-3">
-               <canvas id="cvs" width="800" height="600"></canvas>
+               <canvas id="cvs" width="720" height="480"></canvas>
                <div id="svg" style="display: none"></div>
             </div>
          </div>
@@ -81,6 +81,8 @@
                   <option value="3" disabled>SM-530</option>
                   <option value="4" disabled>SM-590</option>
                </select>
+               <label>Time location $</label>
+               <input id="timeloc" type="text" value="14" size="2">
             </div>
          </div>
 
@@ -144,8 +146,8 @@
 
 
     <script>
-      const width = 800
-      const height = 600
+      const width = 720
+      const height = 480
 
       let DOMURL = window.URL || window.webkitURL || window
       let canvas = document.getElementById('cvs')
@@ -252,11 +254,24 @@
          })
       }
 
-      function refresh() {
+      function drawHelpers() {
+         ctx.strokeStyle = 'red'
+         ctx.beginPath()
+         ctx.moveTo(width/2, 0)
+         ctx.lineTo(width/2, height)
+         ctx.stroke()
+         ctx.moveTo(0, height/2)
+         ctx.lineTo(width, height/2)
+         ctx.stroke()
+      }
+
+      function refresh(helpers) {
+         var h = helpers || 1
          ctx.fillStyle = "#000"
          ctx.fillRect(0, 0, width, height)
          drawBG()
          drawSVG()
+         if (h) drawHelpers()
       }
 
       function doRGBQuant() {
@@ -312,15 +327,17 @@
          elements.each((k, e) => {
             let title = $(e).find('title')
             if (title.length) {
-                  let id = title.text().split('.')
-                  let col = id[0] << 6 | id[1] << 2 | id[2]
-                  let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00`
-                  if ($(e).prop('tagName') == 'g') {
-                     $(e).find('path').each((i, e) => $(e).attr('style', style))
-                  }
-                  else {
-                     $(e).attr('style', style)
-                  }
+               let id = title.text().split('.')
+               let col = ((id[0] & 0b11) << 6) | ((id[1] & 0b1111) << 2) | (id[2] & 0b11)
+               let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00`
+               console.log(`found ${title.text()}, converted to ${col.toString(16)}`)
+               if ($(e).prop('tagName') == 'g') {
+                  $(e).find('path').each((i, e) => $(e).attr('style', style))
+                  $(e).find('polygon').each((i, e) => $(e).attr('style', style))
+               }
+               else {
+                  $(e).attr('style', style)
+               }
             }
          })
 
@@ -349,9 +366,11 @@
          // palette (256x3)
          // rom binary
 
-         let config_size = 12
+         let mcu_size = 1
+         let config_size = 1
+         let config = 13
          let img_size = width*height*2-1
-         let buffer_size = 1 + 1 + config_size + 32 + img_size + 256*3-1 + ROM.byteLength;
+         let buffer_size = mcu_size + config_size + config + 32 + img_size + 256*3-1 + ROM.byteLength;
          let buffer = new Uint8Array(buffer_size)
 
          let ptr = 0
@@ -360,9 +379,12 @@
          buffer[ptr++] = $('#mcuid').val()
 
          // config size
-         buffer[ptr++] = config_size
+         buffer[ptr++] = config
 
-         // 12 bytes for joystick config
+         // first config byte is time location
+         buffer[ptr++] = $("#timeloc").val()
+
+         // 12 config bytes for joystick
          for (var i = 0; i < 23; i+=2) {
             var id1 = '#k' + i
             var id2 = '#k' + (i+1)
