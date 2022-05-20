@@ -24,6 +24,10 @@
 
          <div class="row">
             <div class="col-sm mt-3">
+               <label>mask expansion <i class="fas fa-expand"></i></label>
+               <div class="badge">
+                  <input id="maskexp" type="text" value="10" size="2">
+               </div>
                <input type="checkbox" onchange="javascript:dither=!dither;refresh()" id="VGA">
                <label for="dither">Dither</label>
             </div>
@@ -332,6 +336,8 @@
          // can we use it for automatic segment positioning?
          $('svg #layer2').hide()
 
+         let mask_expansion = $("#maskexp").val()
+
          let data = $('#svg').html()
          let svg = new Blob([data], {type: 'image/svg+xml'})
          let url = DOMURL.createObjectURL(svg)
@@ -346,7 +352,7 @@
                let col = ((id[0] & 0b11) << 6) | ((id[1] & 0b1111) << 2) | (id[2] & 0b11)
                let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00;`
                style += `stroke:#00${('00'+(col).toString(16)).substr(-2)}00;`
-               style += `stroke-width: 10px`
+               style += `stroke-width: ${mask_expansion}px`
                console.log(`found ${title.text()}, converted to ${col.toString(16)}`)
                if ($(e).prop('tagName') == 'g') {
                   $(e).find('path').each((i, e) => $(e).attr('style', style))
