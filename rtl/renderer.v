@@ -102,6 +102,7 @@ parameter IMG_SIZE = 720*480;
 assign frame = px == IMG_SIZE;
 reg [18:0] px;
 reg [1:0] pause = 2'd3;
+reg inc;
 
 always @(posedge clk_sys) begin
 
@@ -121,16 +122,9 @@ always @(posedge clk_sys) begin
       end
 
       READ_MASK_BYTE: begin
-        if (seg_en) begin
-          rom_img_addr <= rom_img_addr + 25'd1;
-          state <= PUSH_FB_COLOR;
-          fb_color <= 8'd0;
-          fb_count <= fb_count + 3'd1;
-        end
-        else begin
-          rom_img_addr <= rom_img_addr + 25'd1;
-          state <= SETUP_IMG_READ;
-        end
+        inc <= seg_en;
+        rom_img_addr <= rom_img_addr + (seg_en ? 25'd1 : 25'd2);
+        state <= SETUP_IMG_READ;
       end
 
       SETUP_IMG_READ: begin
@@ -152,7 +146,7 @@ always @(posedge clk_sys) begin
 
       PUSH_FB_COLOR: begin
         px <= px + 19'd1;
-        rom_img_addr <= rom_img_addr + 25'd1;
+        rom_img_addr <= rom_img_addr + (inc ? 25'd2 : 25'd1);
         fb_data <= { fb_color, fb_data[63:8] };
         state <= fb_count == 3'd0 ? WRITE_FB : UPDATE_CACHE;
       end

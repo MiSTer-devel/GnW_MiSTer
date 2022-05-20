@@ -155,6 +155,7 @@
       let ROM
       let BGImg = []
       let SVGImg = []
+      let AASVGImg = []
       let tfs = [
          [0, 0, width, height], [0, 0, width, height],
          [0, 0, width, height], [0, 0, width, height],
@@ -254,6 +255,13 @@
          })
       }
 
+      function drawAASVG(pal) {
+         AASVGImg.forEach((img, i) => {
+            ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
+         })
+         return doRGBQuant(pal)
+      }
+
       function drawHelpers() {
          ctx.strokeStyle = 'red'
          ctx.beginPath()
@@ -274,12 +282,11 @@
          if (h) drawHelpers()
       }
 
-      function doRGBQuant() {
-        //var opts = { colors: 64 }
-        //var q = new RgbQuant(opts)
-        var q = new RgbQuant()
+      function doRGBQuant(pal) {
+        var opts = pal ? { palette: pal } : {};
+        var q = new RgbQuant(opts)
         q.sample(canvas)
-        var pal = q.palette(true, true)
+        var pal = q.palette(true, false)
         var out = q.reduce(canvas, 2)
         let imageData  = ctx.getImageData(0, 0, canvas.width, canvas.height)
         let data = imageData.data
@@ -321,7 +328,15 @@
          $('#svg').html(evt.target.result)
          $('svg').attr('width', width).removeAttr('height')
 
-         $('svg #layer2').hide() // should be the big white rectangle, pls check
+         // should be the big white rectangle, pls check
+         // can we use it for automatic segment positioning?
+         $('svg #layer2').hide()
+
+         let data = $('#svg').html()
+         let svg = new Blob([data], {type: 'image/svg+xml'})
+         let url = DOMURL.createObjectURL(svg)
+         if (!AASVGImg[sel]) AASVGImg[sel] = new Image()
+         AASVGImg[sel].src = url
 
          let elements = $('#layer1 path,#layer1 g')
          elements.each((k, e) => {
@@ -329,7 +344,9 @@
             if (title.length) {
                let id = title.text().split('.')
                let col = ((id[0] & 0b11) << 6) | ((id[1] & 0b1111) << 2) | (id[2] & 0b11)
-               let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00`
+               let style = `fill-opacity:1;fill:#00${('00'+(col).toString(16)).substr(-2)}00;`
+               style += `stroke:#00${('00'+(col).toString(16)).substr(-2)}00;`
+               style += `stroke-width: 10px`
                console.log(`found ${title.text()}, converted to ${col.toString(16)}`)
                if ($(e).prop('tagName') == 'g') {
                   $(e).find('path').each((i, e) => $(e).attr('style', style))
@@ -345,14 +362,15 @@
             $(e).attr('shape-rendering', 'crispEdges')
          })
 
-         let data = $('#svg').html()
-         let svg = new Blob([data], {type: 'image/svg+xml'})
-         let url = DOMURL.createObjectURL(svg)
+         data = $('#svg').html()
+         svg = new Blob([data], {type: 'image/svg+xml'})
+         url = DOMURL.createObjectURL(svg)
          if (!SVGImg[sel]) SVGImg[sel] = new Image()
          SVGImg[sel].src = url
          SVGImg[sel].onload = function() {
             refresh()
          }
+
       }
 
       function exportBIN() {
@@ -369,7 +387,7 @@
          let mcu_size = 1
          let config_size = 1
          let config = 13
-         let img_size = width*height*2-1
+         let img_size = width*height*3-1
          let buffer_size = mcu_size + config_size + config + 32 + img_size + 256*3-1 + ROM.byteLength;
          let buffer = new Uint8Array(buffer_size)
 
@@ -413,8 +431,11 @@
          ctx.fillRect(0, 0, width, height)
          let qdat = drawBG()
 
+         let segs = drawAASVG(qdat.pal)
+
          for (var i = 0; i < qdat.img.length; i++) {
             buffer[ptr++] = mask[i]
+            buffer[ptr++] = segs.img[i]
             buffer[ptr++] = qdat.img[i]
          }
 
