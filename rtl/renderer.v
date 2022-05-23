@@ -17,7 +17,11 @@ module renderer(
   input fb_ready,
 
   input disp_en,
-  output frame
+
+  // vram interface for VGA output, not used yet
+  output frame,
+  output reg [18:0] px,
+  output reg [7:0] fb_color
 );
 
 parameter
@@ -34,7 +38,7 @@ parameter
 
 reg [3:0] state;
 
-reg [7:0] fb_color;
+// reg [7:0] fb_color;
 reg [2:0] fb_count;
 
 reg seg_en;
@@ -100,7 +104,7 @@ end
 
 parameter IMG_SIZE = 720*480;
 assign frame = px == IMG_SIZE;
-reg [18:0] px;
+// reg [18:0] px;
 reg [1:0] pause = 2'd3;
 reg inc;
 

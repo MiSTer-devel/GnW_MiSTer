@@ -27,8 +27,12 @@ module SM510(
 
 );
 
-parameter MAIN_CLK = 50000000;
-parameter CLK_DIV = MAIN_CLK/18725;
+parameter MAIN_CLK = 90000000;
+parameter CLK_DIV1 = MAIN_CLK/16384; // timer
+parameter CLK_DIV2 = MAIN_CLK/32768; // CPU
+parameter CLK_DIV3 = MAIN_CLK/8192; // sound
+parameter CLK_DIV4 = MAIN_CLK/64; // segments
+
 
 reg [1:0] Pu, Su, Ru;
 reg [3:0] Pm, Sm, Rm;
@@ -37,7 +41,8 @@ reg [3:0] A, Y, L;
 reg [2:0] Bm;
 reg [3:0] Bl;
 reg [7:0] W;
-reg [23:0] clk_cnt;
+reg [23:0] clk_cnt1, clk_cnt2;
+reg [23:0] clk_cnt3, clk_cnt4;
 reg [7:0] rom[4095:0];
 reg [3:0] ram[127:0];
 reg [7:0] rom_dout;
@@ -59,26 +64,55 @@ reg alu_cy;
 reg C;
 reg [1:0] H_clk;
 reg halt;
+reg buzzer;
 
 wire f1 = div[14];
-wire f4 = div[11];
+wire f4 = div[10];
 
 wire [11:0] PC = { Pu, Pm, Pl };
 assign S = W;
 
+reg clk_16k;
 reg clk_32k;
+reg clk_4k;
+reg clk_64;
 
 always @(posedge clk) begin
-  clk_cnt <= clk_cnt + 24'd1;
-  clk_32k <= 1'b0;
-  if (clk_cnt == CLK_DIV) begin
-    clk_32k <= 1'b1;
-    clk_cnt <= 0;
+  clk_cnt1 <= clk_cnt1 + 24'd1;
+  clk_16k <= 1'b0;
+  if (clk_cnt1 == CLK_DIV1) begin
+    clk_16k <= 1'b1;
+    clk_cnt1 <= 0;
   end
 end
 
-wire clk_64 = div[8:0] == 9'd511;
-wire clk_io = clk_32k;
+
+always @(posedge clk) begin
+  clk_cnt2 <= clk_cnt2 + 24'd1;
+  clk_32k <= 1'b0;
+  if (clk_cnt2 == CLK_DIV2) begin
+    clk_32k <= 1'b1;
+    clk_cnt2 <= 0;
+  end
+end
+
+always @(posedge clk) begin
+  clk_cnt3 <= clk_cnt3 + 24'd1;
+  clk_4k <= 1'b0;
+  if (clk_cnt3 == CLK_DIV3) begin
+    clk_4k <= 1'b1;
+    clk_cnt3 <= 0;
+  end
+end
+
+always @(posedge clk) begin
+  clk_cnt4 <= clk_cnt4 + 24'd1;
+  clk_64 <= 1'b0;
+  if (clk_cnt4 == CLK_DIV4) begin
+    clk_64 <= 1'b1;
+    clk_cnt4 <= 0;
+  end
+end
 
 parameter
   RST = 3'b000,
@@ -95,7 +129,7 @@ always @(posedge clk)
 
 // Gamma
 always @(posedge clk) begin
-  if (clk_32k) begin
+  if (clk_16k) begin
     if (div == 15'h3fff) Gamma <= 1'b1;
   end
   if (rst | tis_read) Gamma <= 1'b0;
@@ -103,7 +137,7 @@ end
 
 // div
 always @(posedge clk) begin
-  if (clk_32k) begin
+  if (clk_16k) begin
     if (op == 8'b0110_0101 && state == FT1) // idiv
       div <= 15'd0;
     else if (op == 8'b0101_1101 && state == FT1) // cend
@@ -333,7 +367,7 @@ always @(posedge clk)
 
 // I/O: BP L Y R'
 always @(posedge clk)
-  if (clk_32k) begin
+  if (clk_32k && state == FT2) begin
     case (op)
       8'b0000_0001: BP <= A; // ATBP
       8'b0101_1001: L <= A; // ATL
@@ -348,9 +382,12 @@ always @(posedge clk)
 
 // R
 // R0/R1 have inverted phase
-always @(posedge clk_io) begin
-  R[0] <= RP[0] ? ~R[0] : 1'b0;
-  R[1] <= RP[1] & RP[0] ? ~R[0] : (RP[1] ? ~R[1] : 1'b0); // unused
+always @(posedge clk) begin
+  if (clk_4k) begin
+    buzzer <= ~buzzer;
+    R[0] <= RP[0] ? buzzer : 1'b0;
+    R[1] <= RP[1] ? ~buzzer : 1'b0;
+  end
 end
 
 // BC (crystal bleeder current, active low)
@@ -483,7 +520,8 @@ always @(posedge clk)
   end
 
 // fsm
-always @(posedge clk)
+always @(posedge clk) begin
+  if (rst) state <= FT1;
   if (clk_32k) begin
     if (~rst && ~halt) begin
       state <= FT1;
@@ -531,6 +569,7 @@ always @(posedge clk)
       end
     end
   end
+end
 
 
 endmodule

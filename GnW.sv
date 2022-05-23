@@ -284,6 +284,7 @@ wire reset = RESET | status[0] | buttons[1] | ioctl_download;
 wire hblank, hsync;
 wire vblank, vsync;
 wire ce_pix;
+wire [9:0] hcnt, vcnt;
 assign VGA_DE = ~(hblank|vblank);
 assign VGA_HS = hsync;
 assign VGA_VS = vsync;
@@ -297,8 +298,8 @@ hvgen hvgen(
   .hs(hsync),
   .vs(vsync),
   .ce_pix(ce_pix),
-  .hcnt(), // NC
-  .vcnt()  // NC
+  .hcnt(hcnt),
+  .vcnt(vcnt)
 );
 
 ////////////// CONFIG /////////////
@@ -364,6 +365,10 @@ reg [1:0] pal_ch_cnt;
 reg pal_wr;
 reg [7:0] color;
 
+// second palette for VGA vram
+// can we use FB_PAL_DIN and save some BRAM?
+reg [23:0] vram_pal[255];
+
 always @(posedge clk_sys) begin
 
   old_ioctl_download <= ioctl_download;
@@ -385,6 +390,7 @@ always @(posedge clk_sys) begin
 
     if (pal_ch_cnt == 2'd2) begin
 
+      vram_pal[pal_addr] <= pal_color;
       pal_ch_cnt <= 2'd0;
       pal_wr <= 1'b1;
 
@@ -398,7 +404,10 @@ end
 wire [24:0] rom_img_addr;
 wire rom_img_read;
 wire rom_img_data_ready = sdram_rdy;
+
 wire frame;
+wire [18:0] px;
+wire [7:0] fb_color;
 
 renderer renderer(
   .clk_sys(clk_sys),
@@ -419,8 +428,26 @@ renderer renderer(
   .fb_ready(fb_ready),
 
   .disp_en(~reset),
-  .frame(frame)
+
+  .frame(frame),
+  .px(px),
+  .fb_color(fb_color)
 );
+
+// VGA - WIP
+// reg [7:0] vram[345600];
+// reg [7:0] vram_data;
+// reg [18:0] vram_addr;
+// reg [7:0] vpal_addr;
+// always @(posedge clk_27) begin
+//   vram[px] <= fb_color;
+//   if (~ioctl_download) begin
+//     vram_addr <= vcnt*720+hcnt;
+//     vram_data <= vram[vram_addr];
+//     vpal_addr <= vram_data;
+//     { VGA_R, VGA_G, VGA_B } <= vram_pal[vpal_addr];
+//   end
+// end
 
 ///////////// MCU ///////////////
 
