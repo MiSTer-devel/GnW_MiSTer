@@ -31,7 +31,7 @@ parameter MAIN_CLK = 90000000;
 parameter CLK_DIV1 = MAIN_CLK/16384; // timer
 parameter CLK_DIV2 = MAIN_CLK/32768; // CPU
 parameter CLK_DIV3 = MAIN_CLK/8192; // sound
-parameter CLK_DIV4 = MAIN_CLK/64; // segments
+parameter CLK_DIV4 = MAIN_CLK/8192; // segments
 
 
 reg [1:0] Pu, Su, Ru;
@@ -132,18 +132,19 @@ always @(posedge clk) begin
   if (clk_16k) begin
     if (div == 15'h3fff) Gamma <= 1'b1;
   end
-  if (rst | tis_read) Gamma <= 1'b0;
+  if (rst|tis_read) Gamma <= 1'b0;
 end
 
 // div
 always @(posedge clk) begin
   if (clk_16k) begin
-    if (op == 8'b0110_0101 && state == FT1) // idiv
+    div <= div + 15'd1;
+  end
+  if (clk_32k && state == FT1) begin
+    if (op == 8'b0110_0101) // idiv
       div <= 15'd0;
-    else if (op == 8'b0101_1101 && state == FT1) // cend
+    else if (op == 8'b0101_1101) // cend
       div <= 15'd0;
-    else
-      div <= div + 15'd1;
   end
   if (rst) div <= 15'd0;
 end
@@ -191,7 +192,8 @@ end
 // Bs
 always @(posedge clk) begin
   if (clk_64) begin
-    if (BP & ~BC) Bs <= 1'((L & ~Y) >> H_clk);
+    // if (BP & ~BC) Bs <= 1'((L & ~Y) >> H_clk);
+    Bs <= L[H_clk];
   end
 end
 
@@ -235,6 +237,7 @@ reg set_time;
 reg [2:0] hms_addr;
 reg old_rst;
 always @(posedge clk) begin
+  /*
   old_rst <= rst;
   if (!set_time) oldhms <= hms;
   if (hms^oldhms && |hms) begin
@@ -283,6 +286,7 @@ always @(posedge clk) begin
       end
     endcase
   end
+  */
   if (clk_32k) begin
     if (state == FT2)
       casez (op)
