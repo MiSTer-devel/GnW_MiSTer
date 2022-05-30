@@ -4,12 +4,8 @@
    src="https://code.jquery.com/jquery-3.5.0.min.js"
    integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
    crossorigin="anonymous"></script>
-   <!--
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/eruda/1.5.4/eruda.min.js"></script>
-   <script>eruda.init()</script>
-   -->
    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/js/all.min.js" integrity="sha256-HkXXtFRaflZ7gjmpjGQBENGnq8NIno4SDNq/3DbkMgo=" crossorigin="anonymous"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/js/all.min.js" crossorigin="anonymous"></script>
    <script src="https://cdn.jsdelivr.net/npm/rgbquant@1.1.2/src/rgbquant.min.js"></script>
    <body>
 
@@ -24,7 +20,7 @@
 
          <div class="row">
             <div class="col-sm mt-3">
-               <label>mask expansion <i class="fas fa-expand"></i></label>
+               <label>mask expansion <i class="fa-solid fa-expand"></i></label>
                <div class="badge">
                   <input id="maskexp" type="text" value="10" size="2">
                </div>
@@ -41,7 +37,7 @@
 
          <div class="mb-3">
             <div class="badge badge-pill badge-warning">
-               <i class="fas fa-layer-group"></i>
+               <i class="fa-solid fa-layer-group"></i>
                <select onchange="selectLayer(this.value)">
                   <option value="0">BG1</option>
                   <option value="1">BG2</option>
@@ -49,35 +45,35 @@
                   <option value="3">SVG1</option>
                   <option value="4">SVG2</option>
                </select>
-               <label id="upbtn" role="button" class="m-0" for="upload"><i class="fas fa-upload"></i></label>
+               <label id="upbtn" role="button" class="m-0" for="upload"><i class="fa-solid fa-upload"></i></label>
                <input id="upload" type="file" onchange="upload()" style="display:none">
             </div>
             <div class="badge badge-pill badge-warning">
-               <i class="fas fa-arrows-alt"></i>
-               <button onmousedown="startTransform(sel, 0, -1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-left"></i></button>
-               <button onmousedown="startTransform(sel, 0,  1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-right"></i></button>
-               <button onmousedown="startTransform(sel, 1, -1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-up"></i></button>
-               <button onmousedown="startTransform(sel, 1,  1)" onmouseup="stopTransform()"><i class="fas fa-long-arrow-alt-down"></i></button>
+               <i class="fa-solid fa-arrows-alt"></i>
+               <button onmousedown="startTransform(sel, 0, -1)" onmouseup="stopTransform()"><i class="fa-solid fa-long-arrow-alt-left"></i></button>
+               <button onmousedown="startTransform(sel, 0,  1)" onmouseup="stopTransform()"><i class="fa-solid fa-long-arrow-alt-right"></i></button>
+               <button onmousedown="startTransform(sel, 1, -1)" onmouseup="stopTransform()"><i class="fa-solid fa-long-arrow-alt-up"></i></button>
+               <button onmousedown="startTransform(sel, 1,  1)" onmouseup="stopTransform()"><i class="fa-solid fa-long-arrow-alt-down"></i></button>
             </div>
             <div class="badge badge-pill badge-warning">
-               <i class="fas fa-arrows-alt-h"></i>
-               <button onmousedown="startTransform(sel, 2,  1)" onmouseup="stopTransform()"><i class="fas fa-plus"></i></button>
-               <button onmousedown="startTransform(sel, 2, -1)" onmouseup="stopTransform()"><i class="fas fa-minus"></i></button>
+               <i class="fa-solid fa-arrows-alt-h"></i>
+               <button onmousedown="startTransform(sel, 2,  1)" onmouseup="stopTransform()"><i class="fa-solid fa-plus"></i></button>
+               <button onmousedown="startTransform(sel, 2, -1)" onmouseup="stopTransform()"><i class="fa-solid fa-minus"></i></button>
             </div>
             <div class="badge badge-pill badge-warning">
-               <i class="fas fa-arrows-alt-v"></i>
-               <button onmousedown="startTransform(sel, 3,  1)" onmouseup="stopTransform()"><i class="fas fa-plus"></i></button>
-               <button onmousedown="startTransform(sel, 3, -1)" onmouseup="stopTransform()"><i class="fas fa-minus"></i></button>
+               <i class="fa-solid fa-arrows-alt-v"></i>
+               <button onmousedown="startTransform(sel, 3,  1)" onmouseup="stopTransform()"><i class="fa-solid fa-plus"></i></button>
+               <button onmousedown="startTransform(sel, 3, -1)" onmouseup="stopTransform()"><i class="fa-solid fa-minus"></i></button>
             </div>
             <div class="badge badge-pill badge-warning" style="padding: 6px">
                <label id="LROM" role="button" class="m-0" for="ROM">
-                  <i class="fas fa-upload"></i>
+                  <i class="fa-solid fa-upload"></i>
                   <span class="pl-1">no rom binary</span>
                </label>
                <input id="ROM" type="file" onchange="importROM()" style="display:none">
             </div>
             <div class="badge badge-pill badge-warning" style="padding: 6px" role="button" onclick="exportBIN()">
-               <i class="fas fa-save"></i> export
+               <i class="fa-solid fa-save"></i> export
             </div>
          </div>
 
@@ -96,55 +92,70 @@
             </div>
          </div>
 
-         <div class="container w-50 float-left" id="keys">
+         <div class="row" id="keys">
+            <div class="col">
+
+               <div class="row">
+                  <div class="col-sm"></div>
+                  <div class="col-sm">K1</div>
+                  <div class="col-sm">K2</div>
+                  <div class="col-sm">K3</div>
+                  <div class="col-sm">K4</div>
+               </div>
+               <div class="row bg-light">
+                  <div class="col-sm">S1</div>
+                  <div class="col-sm"><select id="k0"></select></div>
+                  <div class="col-sm"><select id="k1"></select></div>
+                  <div class="col-sm"><select id="k2"></select></div>
+                  <div class="col-sm"><select id="k3"></select></div>
+               </div>
+               <div class="row">
+                  <div class="col-sm">S2</div>
+                  <div class="col-sm"><select id="k4"></select></div>
+                  <div class="col-sm"><select id="k5"></select></div>
+                  <div class="col-sm"><select id="k6"></select></div>
+                  <div class="col-sm"><select id="k7"></select></div>
+               </div>
+               <div class="row bg-light">
+                  <div class="col-sm">S3</div>
+                  <div class="col-sm"><select id="k8"></select></div>
+                  <div class="col-sm"><select id="k9"></select></div>
+                  <div class="col-sm"><select id="k10"></select></div>
+                  <div class="col-sm"><select id="k11"></select></div>
+               </div>
+               <div class="row">
+                  <div class="col-sm">S4</div>
+                  <div class="col-sm"><select id="k12"></select></div>
+                  <div class="col-sm"><select id="k13"></select></div>
+                  <div class="col-sm"><select id="k14"></select></div>
+                  <div class="col-sm"><select id="k15"></select></div>
+               </div>
+               <div class="row bg-light">
+                  <div class="col-sm">S5</div>
+                  <div class="col-sm"><select id="k16"></select></div>
+                  <div class="col-sm"><select id="k17"></select></div>
+                  <div class="col-sm"><select id="k18"></select></div>
+                  <div class="col-sm"><select id="k19"></select></div>
+               </div>
+               <div class="row">
+                  <div class="col-sm">S6</div>
+                  <div class="col-sm"><select id="k20"></select></div>
+                  <div class="col-sm"><select id="k21"></select></div>
+                  <div class="col-sm"><select id="k22"></select></div>
+                  <div class="col-sm"><select id="k23"></select></div>
+               </div>
+            </div>
+         </div>
+
+         <div class="container w-100" id="config">
             <div class="row">
-               <div class="col-sm"></div>
-               <div class="col-sm">K1</div>
-               <div class="col-sm">K2</div>
-               <div class="col-sm">K3</div>
-               <div class="col-sm">K4</div>
-            </div>
-            <div class="row bg-light">
-               <div class="col-sm">S1</div>
-               <div class="col-sm"><select id="k0"></select></div>
-               <div class="col-sm"><select id="k1"></select></div>
-               <div class="col-sm"><select id="k2"></select></div>
-               <div class="col-sm"><select id="k3"></select></div>
+               <div class="badge">
+                  <button onclick="saveconf()"><i class="fa-solid fa-file-arrow-down" title="refresh config"></i></button>
+                  <button onclick="loadconf()"><i class="fa-solid fa-file-arrow-up" title="import config"></i></button>
+               </div>
             </div>
             <div class="row">
-               <div class="col-sm">S2</div>
-               <div class="col-sm"><select id="k4"></select></div>
-               <div class="col-sm"><select id="k5"></select></div>
-               <div class="col-sm"><select id="k6"></select></div>
-               <div class="col-sm"><select id="k7"></select></div>
-            </div>
-            <div class="row bg-light">
-               <div class="col-sm">S3</div>
-               <div class="col-sm"><select id="k8"></select></div>
-               <div class="col-sm"><select id="k9"></select></div>
-               <div class="col-sm"><select id="k10"></select></div>
-               <div class="col-sm"><select id="k11"></select></div>
-            </div>
-            <div class="row">
-               <div class="col-sm">S4</div>
-               <div class="col-sm"><select id="k12"></select></div>
-               <div class="col-sm"><select id="k13"></select></div>
-               <div class="col-sm"><select id="k14"></select></div>
-               <div class="col-sm"><select id="k15"></select></div>
-            </div>
-            <div class="row bg-light">
-               <div class="col-sm">S5</div>
-               <div class="col-sm"><select id="k16"></select></div>
-               <div class="col-sm"><select id="k17"></select></div>
-               <div class="col-sm"><select id="k18"></select></div>
-               <div class="col-sm"><select id="k19"></select></div>
-            </div>
-            <div class="row">
-               <div class="col-sm">S6</div>
-               <div class="col-sm"><select id="k20"></select></div>
-               <div class="col-sm"><select id="k21"></select></div>
-               <div class="col-sm"><select id="k22"></select></div>
-               <div class="col-sm"><select id="k23"></select></div>
+               <textarea style="width: 100%; height: 80px; font-size: 12px"></textarea>
             </div>
          </div>
 
@@ -350,7 +361,7 @@
 
       function SVGLoaded(evt) {
          $('#svg').html(evt.target.result)
-         $('svg').attr('width', width).removeAttr('height')
+         $('#svg svg').attr('width', width).removeAttr('height')
 
          // should be the big white rectangle, pls check
          // can we use it for automatic segment positioning?
@@ -397,6 +408,34 @@
             refresh()
          }
 
+      }
+
+      function saveconf() {
+         let keys = []
+         for (var i = 0; i < 23; i+=2) {
+            keys.push($('#k' + i).val())
+            keys.push($('#k' + (i+1)).val())
+         }
+         let conf = {
+            tfs: tfs,
+            mcuid: $('#mcuid').val(),
+            timeloc: $('#timeloc').val(),
+            keys: keys
+         }
+         let confstr = JSON.stringify(conf)
+         $('#config textarea').val(window.btoa(confstr))
+      }
+
+      function loadconf() {
+         let conf = JSON.parse(window.atob($('#config textarea').val()))
+         for (var i = 0; i < 23; i+=2) {
+            $('#k' + i).val(conf.keys[i])
+            $('#k' + (i+1)).val(conf.keys[i+1])
+         }
+         $('#mcuid').val(conf.mcuid)
+         $('#timeloc').val(conf.timeloc)
+         tfs = conf.tfs
+         refresh()
       }
 
       function exportBIN() {
