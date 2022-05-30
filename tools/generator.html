@@ -30,13 +30,19 @@
                </div>
                <input type="checkbox" onchange="javascript:dither=!dither;refresh()" id="VGA">
                <label for="dither">Dither</label>
+               <div class="badge">
+                  x:<input type="text" onchange="trans(sel, 0, this.value)" id="xc" size="2" value="0">
+                  y:<input type="text" onchange="trans(sel, 1, this.value)" id="yc" size="2" value="0">
+                  w:<input type="text" onchange="trans(sel, 2, this.value)" id="xs" size="2" value="0">
+                  h:<input type="text" onchange="trans(sel, 3, this.value)" id="ys" size="2" value="0">
+               </div>
             </div>
          </div>
 
          <div class="mb-3">
             <div class="badge badge-pill badge-warning">
                <i class="fas fa-layer-group"></i>
-               <select onchange="javascript:sel=this.value">
+               <select onchange="selectLayer(this.value)">
                   <option value="0">BG1</option>
                   <option value="1">BG2</option>
                   <option value="2">BG3</option>
@@ -185,6 +191,11 @@
 
       refresh()
 
+      function selectLayer(v) {
+         sel = v
+         refresh()
+      }
+
       function upload() {
          switch (true) {
             case sel < 3: importBG(); break;
@@ -284,6 +295,10 @@
          drawBG()
          drawSVG()
          if (h) drawHelpers()
+         $('#xc').val(tfs[sel][0])
+         $('#yc').val(tfs[sel][1])
+         $('#xs').val(tfs[sel][2])
+         $('#ys').val(tfs[sel][3])
       }
 
       function doRGBQuant(pal) {
@@ -316,11 +331,16 @@
          ctx.putImageData(imageData, 0, 0);
       }
 
+      function trans(i, j, n) {
+         tfs[i][j] = n
+         refresh()
+      }
+
       let transform
       function startTransform(i, j, n) {
-         transform = setInterval(function() {
-            tfs[i][j] += n
-            refresh()
+         transform = setInterval(_ => {
+            var nv = tfs[i][j] + n
+            trans(i, j, nv)
          }, 50)
       }
 
