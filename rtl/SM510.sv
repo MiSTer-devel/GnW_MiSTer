@@ -9,8 +9,12 @@ module SM510(
   input [7:0] rom_init_data,
   input [11:0] rom_init_addr,
 
-  input [23:0] hms, // HHMMSS in 24h format
-  input [6:0] hms_loc, // storage location
+  input [23:0] hms_in, // HHMMSS in 24h BCD format
+  output reg [23:0] hms_out,
+  output reg hms_rdy,
+  input [6:0] hms_loc, // clock storage location
+  input write_time,
+  input read_time,
 
   input [3:0] K, // key input ports
 
@@ -192,7 +196,6 @@ end
 // Bs
 always @(posedge clk) begin
   if (clk_64) begin
-    // if (BP & ~BC) Bs <= 1'((L & ~Y) >> H_clk);
     Bs <= L[H_clk];
   end
 end
@@ -201,92 +204,71 @@ end
 always @(posedge clk)
   rom_dout <= rom[PC];
 
-// BCD rom
-reg [7:0] bcd_vector;
-reg [7:0] hexval;
-always @*
-  case (hexval)
-    8'h00, 8'h01, 8'h02, 8'h03, 8'h04,
-    8'h05, 8'h06, 8'h07, 8'h08, 8'h09:
-      bcd_vector <= 8'h0;
-    8'h0a, 8'h0b, 8'h0c, 8'h0d, 8'h0e, 8'h0f:
-      bcd_vector <= 8'h16;
-    8'h10, 8'h11, 8'h12, 8'h13:
-      bcd_vector <= 8'h06;
-    8'h14, 8'h15, 8'h16, 8'h17, 8'h18,
-    8'h19, 8'h1a, 8'h1b, 8'h1c, 8'h1d:
-      bcd_vector <= 8'h1c;
-    8'h1e, 8'h1f:
-      bcd_vector <= 8'h22;
-    8'h20, 8'h21, 8'h22, 8'h23, 8'h24,
-    8'h25, 8'h26, 8'h27:
-      bcd_vector <= 8'h12;
-    8'h28, 8'h29, 8'h2a, 8'h2b, 8'h2c,
-    8'h2d, 8'h2e, 8'h2f:
-      bcd_vector <= 8'h28;
-    8'h30, 8'h31:
-      bcd_vector <= 8'h18;
-    8'h32, 8'h33, 8'h34, 8'h35, 8'h36,
-    8'h37, 8'h38, 8'h39, 8'h3a, 8'h3b:
-      bcd_vector <= 8'h2e;
-  endcase
 
 // ram
-reg [23:0] oldhms;
-reg set_time;
-reg [2:0] hms_addr;
 reg old_rst;
+reg set_time, rd_time;
+reg time_action;
+reg [23:0] oldhms;
+reg [2:0] hms_addr;
+reg [6:0] ram_reset_addr;
 always @(posedge clk) begin
-  /*
+
   old_rst <= rst;
-  if (!set_time) oldhms <= hms;
-  if (hms^oldhms && |hms) begin
+  if (~old_rst & rst) begin
+    ram_reset_addr <= 7'd0;
+  end
+
+  if (rom_init) begin
+    // todo: skip clock region [hms_loc..hms_loc+5]
+    ram[ram_reset_addr] <= 4'd0;
+  end
+
+  /*
+
+  RTC
+
+  if (write_time & ~set_time) begin
     set_time <= 1'b1;
     hms_addr <= 3'd0;
-    $display("setting time");
+    hms_rdy <= 1'b0;
+    $display("writing time");
   end
-  if (~rst & old_rst) set_time <= 1'b1;
+
+  if (read_time & ~rd_time) begin
+    rd_time <= 1'b1;
+    hms_addr <= 3'd0;
+    hms_rdy <= 1'b0;
+    $display("reading time");
+  end
+
   if (set_time) begin
-    case (hms_addr)
-      3'd0: begin // AM/PM + H upper digit
-        if (Gamma) begin // wait 1s
-          ram[hms_loc+hms_addr] <= {
-            hms[23:16] > 8'd12 ? 1'b1 : 1'b0,
-            hms[23:16] > 8'd21 ? 3'd1 :
-            hms[23:16] > 8'd12 ? 3'd0 :
-            hms[23:16] > 8'd9 ? 3'd1 : 3'd0
-          };
-          // 24h -> 12h conversion
-          hexval <= hms[23:16] > 8'd12 ? 4'(hms[23:16] + 4'd4) : hms[23:16];
-          hms_addr <= hms_addr + 3'd1;
-        end
-      end
-      3'd1: begin // H lower digit
-        ram[hms_loc+hms_addr] <= hexval[3:0] + bcd_vector[3:0];
-        hexval <= hms[15:8];
+    case (time_action)
+      1'b0: begin // do HL MH ML SH SL
+        ram[hms_loc+hms_addr] <= hms_in[{3'd4-hms_addr, 2'd0 }+:4];
         hms_addr <= hms_addr + 3'd1;
+        time_action <= hms_addr == 3'd4 ? 1'b1 : 1'b0;
       end
-      3'd2: begin // M upper digit
-        ram[hms_loc+hms_addr] <= hms[15:12] + bcd_vector[7:4];
-        hms_addr <= hms_addr + 3'd1;
-      end
-      3'd3: begin // M lower digit
-        ram[hms_loc+hms_addr] <= hms[11:8] + bcd_vector[3:0];
-        hexval <= hms[7:0];
-        hms_addr <= hms_addr + 3'd1;
-      end
-      3'd4: begin // S upper digit
-        ram[hms_loc+hms_addr] <= hms[7:4] + bcd_vector[7:4];
-        hms_addr <= hms_addr + 3'd1;
-      end
-      3'd5: begin // S lower digit
-        ram[hms_loc+hms_addr] <= hms[3:0] + bcd_vector[3:0];
+      1'b1: begin // HH and AM/PM
+        ram[hms_loc] <= { hms_in[23:16] > 12 ? 1'b1 : 1'b0, hms_in[22:20] };
         set_time <= 1'b0;
-        hms_addr <= 3'd0;
+        time_action <= 1'b0;
+        hms_rdy <= 1'b1;
       end
     endcase
   end
+
+  else if (rd_time) begin
+    hms_out[{3'd5-hms_addr, 2'd0}+:4] <= ram[hms_loc+hms_addr];
+    hms_addr <= hms_addr + 3'd1;
+    if (hms_addr == 3'd5) begin
+      rd_time <= 1'b0;
+      hms_rdy <= 1'b1;
+    end
+  end
+
   */
+
   if (clk_32k) begin
     if (state == FT2)
       casez (op)

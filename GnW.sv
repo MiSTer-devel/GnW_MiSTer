@@ -420,7 +420,7 @@ renderer renderer(
   .rom_img_addr(rom_img_addr),
   .rom_img_read(rom_img_read),
   .rom_img_data_ready(rom_img_data_ready),
-  .rom_img_data(sdram_data),
+  .rom_img_data(sdram_data_latch),
 
   .fb_addr(fb_addr),
   .fb_data(fb_data),
@@ -464,6 +464,32 @@ wire [15:0] segA, segB;
 wire [3:0] H;
 wire Bs;
 
+/*
+reg [23:0] current_time, hms_in;
+wire [23:0] hms_out;
+reg old_reset, write_time, read_time;
+always @(posedge clk_sys) begin
+  old_reset <= reset;
+
+  // not first rom load so read time
+  if (reset & ~old_reset & |current_time) read_time <= 1'b1;
+
+  // end of reset, write time
+  if (~reset & old_reset) begin
+    write_time <= 1'b1;
+    hms_in <= |current_time ? current_time : RTC[23:0];
+  end
+
+  if (read_time & hms_rdy) begin
+    read_time <= 1'b0;
+    current_time <= hms_out;
+  end
+
+  if (write_time & hms_rdy) write_time <= 1'b0;
+
+end
+*/
+
 SM510 mcu(
 
   .rst(reset),
@@ -472,8 +498,13 @@ SM510 mcu(
   .rom_init(rom_load & ioctl_wr),
   .rom_init_addr(ioctl_addr - rom_base_addr),
   .rom_init_data(ioctl_dout),
-  .hms(RTC[23:0]),
-  .hms_loc(conf[0]),
+
+  // .hms_in(RTC[23:0]),
+  // .hms_out(RTC_out),
+  // .hms_loc(conf[0]),
+  // .hms_rdy(hms_rdy),
+  // .write_time(write_time),
+  // .read_time(~old_ioctl_download & ioctl_download),
 
   .K(K),
   .Beta(1),
@@ -491,6 +522,7 @@ SM510 mcu(
 ///////////// SDRAM /////////////
 
 reg [24:0] sdram_addr;
+reg [7:0] sdram_data_latch;
 wire [7:0] sdram_data;
 reg sdram_rd, sdram_wr;
 wire sdram_rdy;
@@ -507,6 +539,7 @@ always @(posedge clk_sys) begin
     sdram_addr <= rom_base_image_addr + rom_img_addr;
     sdram_rd <= 1'b1;
   end
+  sdram_data_latch <= sdram_data;
 end
 
 sdram sdram
