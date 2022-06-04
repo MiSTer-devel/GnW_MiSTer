@@ -12,8 +12,11 @@ This is still a work in progress:
 
 The core comes with a ROM generator so in theory, it could be possible to create new Game and Watch games. A SM510 assembler exists here: https://github.com/trevorjay/marios-binary-factory
 
+
 I would like to thank Tonton for his work with the generator!! Thanks to him, pre-compiled games are available on archive.org:
 https://archive.org/download/gnw-games
+
+If you would like to convert games yourself, read the manual in the Tools directory.
 
 A big thank you to all my Patreon contributors!!
 
