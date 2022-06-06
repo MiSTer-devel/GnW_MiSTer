@@ -222,6 +222,7 @@ always @(posedge clk) begin
   if (rom_init) begin
     // todo: skip clock region [hms_loc..hms_loc+5]
     ram[ram_reset_addr] <= 4'd0;
+    ram_reset_addr <= ram_reset_addr + 7'd1;
   end
 
   /*

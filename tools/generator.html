@@ -276,12 +276,14 @@
       }
 
       function drawSVG() {
+         ctx.imageSmoothingEnabled = false;
          SVGImg.forEach((img, i) => {
             ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
          })
       }
 
       function drawAASVG(pal) {
+         ctx.imageSmoothingEnabled = false;
          AASVGImg.forEach((img, i) => {
             ctx.drawImage(img, tfs[i][0], tfs[i][1], tfs[i][2], tfs[i][3])
          })

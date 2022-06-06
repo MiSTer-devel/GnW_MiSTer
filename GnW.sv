@@ -205,11 +205,10 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 
 `include "build_id.v"
 localparam CONF_STR = {
-  "Game & Watch;;",
+  "GameNWatch;;",
+  "F,BIN,Load File;",
   "-;",
   "O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-  "-;",
-  "F,BIN,Load File;",
   "-;",
   "R0,Reset;",
   "-;",

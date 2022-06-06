@@ -1,5 +1,4 @@
 # MiSTer Game and Watch Game Converter Tool
-I would like to thank Tonton for his work with the generator!!
 
 To convert a game yourself, find its MAME ROM and artwork files.
 Keep in mind that only games that use the SM-510 MCU are supported at the moment. You can check which games use which MCU in the MAME sourcecode linked below.
