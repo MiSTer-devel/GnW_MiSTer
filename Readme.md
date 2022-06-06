@@ -2,7 +2,7 @@
 
 The Game and Watch handheld devices emulator for MiSTer FPGA by Pierco.
 
-Place your ROMs into the folder "/media/fat/games/Game & Watch".
+Place your ROMs into the folder "/media/fat/games/GameNWatch".
 
 This is still a work in progress:
 
