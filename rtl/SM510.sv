@@ -31,8 +31,8 @@ module SM510(
 
 );
 
-parameter MAIN_CLK = 90000000;
-parameter CLK_DIV1 = MAIN_CLK/16384; // timer
+parameter MAIN_CLK = 50000000;
+parameter CLK_DIV1 = MAIN_CLK/18312;// 16384; // timer
 parameter CLK_DIV2 = MAIN_CLK/32768; // CPU
 parameter CLK_DIV3 = MAIN_CLK/8192; // sound
 parameter CLK_DIV4 = MAIN_CLK/8192; // segments

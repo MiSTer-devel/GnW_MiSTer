@@ -21,6 +21,8 @@ module renderer(
   // vram interface for VGA output, not used yet
   output frame,
   output reg [18:0] px,
+  output reg [9:0] xx,
+  output reg [8:0] yy,
   output reg [7:0] fb_color
 );
 
@@ -150,6 +152,17 @@ always @(posedge clk_sys) begin
 
       PUSH_FB_COLOR: begin
         px <= px + 19'd1;
+		  
+		  if (xx < 719)
+			xx <= xx + 10'd1;
+		  else begin
+			xx <= 10'd0;
+		   if (yy < 479)
+			  yy <= yy + 9'd1;
+			else
+			  yy <= 9'd0;
+        end
+			
         rom_img_addr <= rom_img_addr + (inc ? 25'd2 : 25'd1);
         fb_data <= { fb_color, fb_data[63:8] };
         state <= fb_count == 3'd0 ? WRITE_FB : UPDATE_CACHE;
@@ -178,6 +191,8 @@ always @(posedge clk_sys) begin
           fb_addr <= 28'd0;
           rom_img_addr <= 25'd0;
           px <= 19'd0;
+			 xx <= 10'd0;
+			 yy <= 9'd0;
           seg_a_cache[0] <= seg_a[0];
           seg_a_cache[1] <= seg_a[1];
           seg_a_cache[2] <= seg_a[2];
